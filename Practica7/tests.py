@@ -124,31 +124,31 @@ class TestREST(unittest.TestCase):
             self.assertEqual(r.status_code, expected_code)
             self.assertEqual(set(r.json()['asignaturas']), set(expected))
 
-    def test_paginado(self):
-        """Añadir varias asignaturas después de borrarlas y obtenerlas con paginación"""
-        added = self.borra_e_inserta(ASIGS)
+    # def test_paginado(self):
+    #     """Añadir varias asignaturas después de borrarlas y obtenerlas con paginación"""
+    #     added = self.borra_e_inserta(ASIGS)
 
-        for page in range(1, 10):
-            for per_page in range(1, 10):
-                r = requests.get(f'{HOST}/asignaturas?per_page={per_page}&page={page}')
-                expected = set(rutas_paginado(added, per_page, page))
-                expected_code = 200 if len(expected) == len(added) else 206
-                self.assertEqual(r.status_code, expected_code)
-                self.assertEqual(set(r.json()['asignaturas']), expected)
+    #     for page in range(1, 10):
+    #         for per_page in range(1, 10):
+    #             r = requests.get(f'{HOST}/asignaturas?per_page={per_page}&page={page}')
+    #             expected = set(rutas_paginado(added, per_page, page))
+    #             expected_code = 200 if len(expected) == len(added) else 206
+    #             self.assertEqual(r.status_code, expected_code)
+    #             self.assertEqual(set(r.json()['asignaturas']), expected)
 
-    def test_paginado_filtro(self):
-        """Añadir varias asignaturas después de borrarlas y obtenerlas con paginación" y filtrado"""
-        added = self.borra_e_inserta(ASIGS)
+    # def test_paginado_filtro(self):
+    #     """Añadir varias asignaturas después de borrarlas y obtenerlas con paginación" y filtrado"""
+    #     added = self.borra_e_inserta(ASIGS)
 
-        for page in range(1, 10):
-            for per_page in range(1, 10):
-                for umbral in range(10, 150, 10):
-                    r = requests.get(f'{HOST}/asignaturas?per_page={per_page}&page={page}&alumnos_gte={umbral}')
-                    expected = set(rutas_paginado(
-                        list(filter(lambda x: x['numero_alumnos'] >= umbral, added)), per_page, page))
-                    expected_code = 200 if len(expected) == len(added) else 206
-                    self.assertEqual(r.status_code, expected_code)
-                    self.assertEqual(set(r.json()['asignaturas']), expected)
+    #     for page in range(1, 10):
+    #         for per_page in range(1, 10):
+    #             for umbral in range(10, 150, 10):
+    #                 r = requests.get(f'{HOST}/asignaturas?per_page={per_page}&page={page}&alumnos_gte={umbral}')
+    #                 expected = set(rutas_paginado(
+    #                     list(filter(lambda x: x['numero_alumnos'] >= umbral, added)), per_page, page))
+    #                 expected_code = 200 if len(expected) == len(added) else 206
+    #                 self.assertEqual(r.status_code, expected_code)
+    #                 self.assertEqual(set(r.json()['asignaturas']), expected)
 
     def test_post_incorrecto(self):
         """Las peticiones POST con asignaturas mal formadas devuelven 404"""
