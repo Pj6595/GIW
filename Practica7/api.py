@@ -4,7 +4,7 @@ Práctica 07
 Grupo 06
 Autores: Jaime Antolín, Álvar Domingo, Pablo Jurado, Leire Osés
 
-Jaime Antolín, Álvar Domingo, Pablo Jurado, Leire Osés declaramos que esta solución es fruto exclusivamente
+Jaime Antolín, Álvar Domingo, Pablo Jurado y Leire Osés declaramos que esta solución es fruto exclusivamente
 de nuestro trabajo personal. No hemos sido ayudados por ninguna otra persona ni hemos
 obtenido la solución de fuentes externas, y tampoco hemos compartido nuestra solución
 con nadie. Declaramos además que no hemos realizado de manera deshonesta ninguna otra
@@ -24,83 +24,61 @@ def root():
     """/ es una ruta válida"""
     return 'Soy la página principal'
 
+def rutas_asig_gte(list_asignturas, umbral):
+    """Devuelve el conjunto de rutas de las asignaturas que tienen más o igual número de alumnos"""
+    gte = filter(lambda x: x['numero_alumnos'] >= umbral, list_asignturas)
+    return list(map(lambda x: f"/asignaturas/{x['id']}", gte))
+
+
+def rutas_paginado(list_asignturas, per_page, page):
+    """Devuelve el conjunto de rutas de las asignaturas considerando la paginación"""
+    asigs = list_asignturas[(page - 1) * per_page:page * per_page]
+    return list(map(lambda x: f"/asignaturas/{x['id']}", asigs))
+
 @app.route('/asignaturas', methods=['GET'])
 def asignaturas():
-    if len(listaAsignaturas) == 0:
-        return listaAsignaturas, 204
-
     asignaturasUrls = []
     result = {}
+    result["asignaturas"] = asignaturasUrls
+
+    if len(listaAsignaturas) == 0:
+        return result, 200
+
     if(len(request.args) == 0):
         for elem in listaAsignaturas:
             asignaturasUrls.append("/asignaturas/" + str(elem["id"]))
-    
-        result["asignaturas"] = asignaturasUrls
+
+        return result, 200
+
+    alumnos_gte = request.args.get("alumnos_gte", None, int)
+    page = request.args.get("page", None, int)
+    per_page = request.args.get("per_page", None, int)
+
+    #Paginado sin filtro
+    if page != None and per_page != None and alumnos_gte == None:
+        asignaturasUrls = rutas_paginado(listaAsignaturas, per_page, page)
+
+    #Paginado con filtro
+    elif page != None and per_page != None and alumnos_gte != None:
+        asignaturasFiltradas = []
+        for i in listaAsignaturas:
+            if i["numero_alumnos"] >= alumnos_gte:
+                asignaturasFiltradas.append(i)
+
+        asignaturasUrls = rutas_paginado(asignaturasFiltradas, per_page, page)
+
+    #no existe ninguno de los parámetros de filtrado
+    elif alumnos_gte == None:
+        return "Parámetros introducidos no válidos", 400
+    #solo existe alumnos_gte
+    else:
+        asignaturasUrls = rutas_asig_gte(listaAsignaturas, alumnos_gte)
+
+    result["asignaturas"] = asignaturasUrls
+    if len(asignaturasUrls) == len(listaAsignaturas):
         return result, 200
     else:
-        alumnos_gte = request.args.get("alumnos_gte", None,int)
-        page = request.args.get("page", None, int)
-        per_page = request.args.get("per_page", None, int)
-        
-        #Paginado sin filtro
-        if page != None and per_page != None and alumnos_gte == None:
-            currentElem = per_page * (page - 1)
-
-            if currentElem < 0:
-                return "Valores fuera de rango", 400
-            
-            maxElem = currentElem + per_page
-            while currentElem < maxElem and currentElem < len(listaAsignaturas):
-                asignaturasUrls.append("/asignaturas/" + str(listaAsignaturas[currentElem]["id"]))
-                currentElem +=1
-            result["asignaturas"] = asignaturasUrls
-
-            if len(asignaturasUrls) == len(listaAsignaturas):
-                return result, 200
-            else:
-                return result, 206
-        #Paginado con filtro
-        elif page != None and per_page != None and alumnos_gte != None:
-            if alumnos_gte < 0 :  return "Valores fuera de rango", 400
-            asignaturasFiltradas = []
-
-            for i in listaAsignaturas:
-                if i["numero_alumnos"] >= alumnos_gte:
-                    asignaturasFiltradas.append(i)
-            
-            currentElem = per_page * (page - 1)
-
-            if currentElem < 0:
-                return "Valores fuera de rango", 400
-            
-            maxElem = currentElem + per_page
-            while currentElem < maxElem and currentElem < len(asignaturasFiltradas):
-                asignaturasUrls.append("/asignaturas/" + str(asignaturasFiltradas[currentElem]["id"]))
-                currentElem +=1
-            result["asignaturas"] = asignaturasUrls
-
-            if len(asignaturasUrls) == len(listaAsignaturas):
-                return result, 200
-            else:
-                return result, 206    
-
-        #no existe ninguno de los parámetros de filtrado
-        elif alumnos_gte == None:
-            return "Parámetros introducidos no válidos", 400
-        #solo existe alumnos_gte
-        else:
-            if alumnos_gte < 0 :  return "Valores fuera de rango", 400
-
-            for i in listaAsignaturas:
-                if i["numero_alumnos"] >= alumnos_gte:
-                    asignaturasUrls.append("/asignaturas/" + str(i["id"]))
-            
-            result["asignaturas"] = asignaturasUrls
-
-            if len(asignaturasUrls) == len(listaAsignaturas):
-                return result, 200
-            else:
-                return result, 206
+        return result, 206
 
 @app.route('/asignaturas', methods=['DELETE'])
 def borrarAsignaturas():
