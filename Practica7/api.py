@@ -15,23 +15,23 @@ from flask import jsonify
 app = Flask(__name__)
 
 listaAsignaturas = []
-
+##Funcion para comprobar que el formato de las request que recibimos es correcto
 def compruebaRequest(requestData):
     return {"nombre","numero_alumnos", "horario"} <= requestData.keys() and type(requestData["nombre"]) == str and type(requestData["numero_alumnos"]) == int and type(requestData["horario"]) == list and len(requestData.keys()) == 3
 
+##Definicion de la ruta raiz
 @app.route('/', methods=['GET'])
 def root():
     """/ es una ruta válida"""
     return 'Soy la página principal'
 
+##Devuelve el conjunto de rutas de las asignaturas que tienen más o igual número de alumnos
 def rutas_asig_gte(list_asignturas, umbral):
-    """Devuelve el conjunto de rutas de las asignaturas que tienen más o igual número de alumnos"""
     gte = filter(lambda x: x['numero_alumnos'] >= umbral, list_asignturas)
     return list(map(lambda x: f"/asignaturas/{x['id']}", gte))
 
-
-def rutas_paginado(list_asignturas, per_page, page):
-    """Devuelve el conjunto de rutas de las asignaturas considerando la paginación"""
+##Devuelve el conjunto de rutas de las asignaturas considerando la paginación
+def rutas_paginado(list_asignturas, per_page, page):  
     asigs = list_asignturas[(page - 1) * per_page:page * per_page]
     return list(map(lambda x: f"/asignaturas/{x['id']}", asigs))
 
@@ -41,9 +41,11 @@ def asignaturas():
     result = {}
     result["asignaturas"] = asignaturasUrls
 
+    ##no hay asignaturas
     if len(listaAsignaturas) == 0:
         return result, 200
 
+    ##request sin argumentos
     if(len(request.args) == 0):
         for elem in listaAsignaturas:
             asignaturasUrls.append("/asignaturas/" + str(elem["id"]))
@@ -75,22 +77,29 @@ def asignaturas():
         asignaturasUrls = rutas_asig_gte(listaAsignaturas, alumnos_gte)
 
     result["asignaturas"] = asignaturasUrls
+
+    ##segun si mostramos todas las asignaturas o solo algunas devolvemos un codigo u otro
     if len(asignaturasUrls) == len(listaAsignaturas):
         return result, 200
     else:
         return result, 206
 
+##borrado de la lista de asignaturas
 @app.route('/asignaturas', methods=['DELETE'])
 def borrarAsignaturas():
     listaAsignaturas.clear()
     return 'Todas las asignaturas han sido borradas',204
 
+
 @app.route('/asignaturas', methods=['POST'])
 def anadeAsignaturas():
+    ##tratamos de convertir a json
     requestData = request.get_json()
+    ##si no se ha conseguido, es otro formato
     if requestData == None:
         return 'Formato no aceptado', 400
     
+    ##comprobamos si el formato de la request es valido
     if compruebaRequest(requestData):
         idNum = len(listaAsignaturas)
         listaAsignaturas.append(requestData)
@@ -99,6 +108,7 @@ def anadeAsignaturas():
     else:
         return 'Formato no aceptado json incorrecto', 400
 
+##borrado de asignaturas
 @app.route('/asignaturas/<int:numero>', methods=['DELETE'])
 def borrarAsignatura(numero):
     if numero >= len(listaAsignaturas) or numero < 0:
@@ -108,8 +118,9 @@ def borrarAsignatura(numero):
     for i in range(numero, len(listaAsignaturas)):
         listaAsignaturas[i]["id"]-=1
 
-    return 'Todas las asignaturas han sido borradas',204
+    return 'Las asignatura han sido borrada',204
 
+##GET de las asignaturas
 @app.route('/asignaturas/<int:numero>', methods=['GET'])
 def obtenerAsignatura(numero):
     if numero < len(listaAsignaturas):
@@ -117,15 +128,19 @@ def obtenerAsignatura(numero):
     else:
          return "Asignatura no encontrada", 404
 
+##reemplazar asignaturas
 @app.route('/asignaturas/<int:numero>', methods=['PUT'])
 def reemplazarAsignatura(numero):
     if numero >= len(listaAsignaturas) or numero < 0:
         return "Asignatura no encontrada", 404
 
+    ##convertir a json
     requestData = request.get_json()
+    ##comprobamos que el formato sea correcto
     if requestData == None:
         return 'Formato no aceptado', 400
     
+    ##comprobamos que la request tiene los parametros que necesitamos
     if compruebaRequest(requestData):
         listaAsignaturas[numero] = requestData
         listaAsignaturas[numero]["id"] = numero
@@ -134,19 +149,23 @@ def reemplazarAsignatura(numero):
         return 'Formato no aceptado json incorrecto', 400
     
     
-
+##modificar un campo de las asignaturas
 @app.route('/asignaturas/<int:numero>', methods=['PATCH'])
 def modificaCampoAsignatura(numero):
 
+    ##comprobamos que existe la asignatura
     if numero < len(listaAsignaturas):
         requestData = request.get_json()
+        ##comprobamos si es un json
         if requestData == None:
             return 'Formato no aceptado, solo JSON valido', 400
-    
+
+        ##comprobamos que la request tenga solo un parametro
         if(len(requestData)>1):
             return "Demasiados parametros, introducir solo 1", 400
 
         key = list(requestData.keys())[0]
+        ##comprobamos que el campo a modificar sea uno de los nuestros
         if "nombre" == key or key =="numero_alumnos" or key == "horario":
             listaAsignaturas[numero][key] = requestData[key]
             return "Campo modificado", 200
@@ -156,7 +175,7 @@ def modificaCampoAsignatura(numero):
     else:
          return "Asignatura no encontrada", 404
 
-       
+##devuelve el horario de una asignatura    
 @app.route('/asignaturas/<int:numero>/horario', methods=['GET'])
 def getHorario(numero):
     if numero >= len(listaAsignaturas) or numero < 0:
