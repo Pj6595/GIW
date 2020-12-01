@@ -31,10 +31,10 @@ def checkList(lista):
         raise ValidationError("El valor del ListField no es una lista")
 
 class Tarjeta(EmbeddedDocument):
-    nombre = StringField(required=True, min_length = 2, validation=checkString)
+    nombre = StringField(required=True, min_length = 2)
     numero = StringField(required=True, min_length=16, max_length=16,  regex = "[0-9]")
     mes = StringField(required = True, min_length=2, max_length=2,  regex = "[0-9]")
-    año = StringField(required = True, min_length=2, max_length=2,  regex = "[0-9]",validation=checkString)
+    año = StringField(required = True, min_length=2, max_length=2,  regex = "[0-9]")
     ccv = StringField(required=True, min_length=3, max_length=3,  regex = "[0-9]")
 
     def clean(self):
@@ -54,7 +54,7 @@ class Tarjeta(EmbeddedDocument):
 
 class Producto(Document):
     codigo_barras = StringField(min_length=13, max_length=13, regex="[0-9]", primary_key=True)
-    nombre = StringField(required=True, min_length=2, validation=checkString)
+    nombre = StringField(required=True, min_length=2)
     categoria_principal = IntField(required=True)
     categorias_secundarias = ListField(IntField(), required=False)
     
@@ -103,7 +103,7 @@ class Linea(EmbeddedDocument):
 
 class Pedido(Document):
     total = FloatField(required = True, min_value=0)
-    fecha = ComplexDateTimeField(required=True, validation = checkString)
+    fecha = ComplexDateTimeField(required=True)
     lineas = ListField(EmbeddedDocumentField(Linea), required=True)
 
     def clean(self):
@@ -124,12 +124,12 @@ class Pedido(Document):
 
 class Usuario(Document):
     dni =  StringField(primary_key=True, max_length=9, min_length=9, regex = "[0-9]+[A-Z]")
-    nombre = StringField(required=True, min_length = 2, validation=checkString)
-    apellido1 = StringField(required=True, min_length = 2, validation=checkString)
-    apellido2 = StringField(validation=checkString)
-    f_nac = StringField(required=True, min_length= 10, max_length=10, regex="", validation=checkString)
-    tarjetas = ListField(EmbeddedDocumentField(Tarjeta), validation =checkList)
-    pedidos = ListField(ReferenceField(Pedido, reverse_delete_rule=4), validation =checkList)
+    nombre = StringField(required=True, min_length = 2)
+    apellido1 = StringField(required=True, min_length = 2)
+    apellido2 = StringField()
+    f_nac = StringField(required=True, min_length= 10, max_length=10, regex="")
+    tarjetas = ListField(EmbeddedDocumentField(Tarjeta))
+    pedidos = ListField(ReferenceField(Pedido, reverse_delete_rule=4))
 
     def clean(self):
         checkString(self.dni)
