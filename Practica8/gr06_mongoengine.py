@@ -14,23 +14,7 @@ import math
 
 connect('giw_mongoengine')
 
-def checkString(stri):
-    if not isinstance(stri, str):
-        raise ValidationError("El valor del StringField no es un string")
-
-def checkInt(inte):
-    if not isinstance(inte, int):
-        raise ValidationError("El valor del IntField no es un int")
-
-def checkFloat(floater):
-    if not isinstance(floater, float):
-        raise ValidationError("El valor del FloatField no es un float")
-
-def checkList(lista):
-    if not isinstance(lista, list):
-        raise ValidationError("El valor del ListField no es una lista")
-
-class Tarjeta(EmbeddedDocument):
+class Tarjeta(EmbeddedDocument): #es embedded porque solo puede existir dentro de usuario
     nombre = StringField(required=True, min_length = 2)
     numero = StringField(required=True, min_length=16, max_length=16,  regex = "[0-9]")
     mes = StringField(required = True, min_length=2, max_length=2,  regex = "[0-9]")
@@ -38,17 +22,17 @@ class Tarjeta(EmbeddedDocument):
     ccv = StringField(required=True, min_length=3, max_length=3,  regex = "[0-9]")
 
     def clean(self):
-        checkString(self.numero)
-        checkString(self.ccv)
+        self.validate(clean=False) #los self.validate comprueban que los argumentos insertados corresponden al field que les toca
         if not self.ccv.isnumeric():
             raise ValidationError("El ccv no tiene un formato numérico correcto")
 
-        checkString(self.mes)
         if not self.mes.isnumeric():
             raise ValidationError("El mes no tiene un formato numérico correcto")
+
         mesNum = int(self.mes)
         if(mesNum < 1 or mesNum >12): 
             raise ValidationError("Mes no valido")
+        
         if not self.numero.isnumeric():
             raise ValidationError("El numero de tarjeta contiene cosas que no son números")
 
@@ -59,10 +43,9 @@ class Producto(Document):
     categorias_secundarias = ListField(IntField(), required=False)
     
     def clean(self):
-        checkList(self.categorias_secundarias)
-        checkString(self.codigo_barras)
-        checkInt(self.categoria_principal)
-        suma = 0
+        self.validate(clean = False)
+        #https://en.wikipedia.org/wiki/International_Article_Number#Check_digit
+        suma = 0 #comprobar que el codigo de barras sigue el formato EAN-13
         for i in range(12):
             peso = 0
             digito = int(self.codigo_barras[i])
@@ -81,7 +64,7 @@ class Producto(Document):
 
         
 
-class Linea(EmbeddedDocument):
+class Linea(EmbeddedDocument): #es embedded porque solo puede existir dentro de pedido
     num_items = IntField(required = True, min_value=0)
     precio_item = FloatField(required = True, min_value=0)
     name = StringField(required=True, min_length = 2)
@@ -89,15 +72,13 @@ class Linea(EmbeddedDocument):
     ref =  ReferenceField(Producto, required = True)
 
     def clean(self):
-        checkString(self.name)
+        self.validate(clean=False)
         if not isinstance(self.ref, Producto):
             raise ValidationError("La referencia a un producto no es correcta")
-        checkString(self.ref.nombre)
-        checkInt(self.num_items)
-        checkFloat(self.precio_item)
-        checkFloat(self.total)
+
         if self.name != self.ref.nombre:
             raise ValidationError("El nombre de el producto referenciado no se corresponde con el de la línea")
+
         if self.total != self.num_items*self.precio_item:
             raise ValidationError("El precio total de la línea no se corresponde con el precio individual por número de items")
 
@@ -107,8 +88,7 @@ class Pedido(Document):
     lineas = ListField(EmbeddedDocumentField(Linea), required=True)
 
     def clean(self):
-        checkFloat(self.total)
-        checkList(self.lineas)
+        self.validate(clean=False)
         sumaPrecio = 0
         productosReferenciados = {}
         for i in self.lineas:
@@ -117,10 +97,9 @@ class Pedido(Document):
                 productosReferenciados[i.ref] = True
             else:
                 raise ValidationError("Hay más de una línea que referencia un mismo producto")
+
         if sumaPrecio != self.total:
             raise ValidationError("El precio total no se corresponde a la suma de los precios de cada item")
-
-        checkList(self.lineas)
 
 class Usuario(Document):
     dni =  StringField(primary_key=True, max_length=9, min_length=9, regex = "[0-9]+[A-Z]")
@@ -132,8 +111,7 @@ class Usuario(Document):
     pedidos = ListField(ReferenceField(Pedido, reverse_delete_rule=4))
 
     def clean(self):
-        checkString(self.dni)
-        checkString(self.f_nac)
+        self.validate(clean = False)
 
         if len(self.dni) != 9:
             raise ValidationError("La longitud del DNI no es correcta")
@@ -156,14 +134,14 @@ class Usuario(Document):
             raise ValidationError("El formato de la fecha de nacimiento es incorrecto")
 
 def inserta():
-    tarjeta1 = Tarjeta(nombre ="Joselito Manzanas", numero="5383914025409234",mes= "03", año="23", ccv="594")
-    tarjeta2 = Tarjeta(nombre="Joselito Manzanas", numero="5383984025609334", mes="12", año="26",ccv="666")
+    tarjeta1 = Tarjeta(nombre ="Joselito Manzanas", numero="5383914025409234", mes= "03", año="23", ccv="594")
+    tarjeta2 = Tarjeta(nombre ="Joselito Manzanas", numero="5383984025609334", mes= "12", año="26", ccv="666")
     tarjeta3 = Tarjeta(nombre ="Miguelon Martinez Puerta", numero="5383914025409234", mes="04", año="24", ccv="549")
     tarjeta4 = Tarjeta(nombre ="Miguelon Martinez Puerta", numero="6374919875409265", mes="06", año="22", ccv="658")
 
     producto1 = Producto(codigo_barras="1886318417087", nombre="Toallas", categoria_principal=2, categorias_secundarias=[2,4,5,6])
     producto2 = Producto(codigo_barras="4561405092114", nombre="Sillas", categoria_principal=1, categorias_secundarias=[1,11,12])
-    producto3 = Producto(codigo_barras= "6258597106542",nombre="Sal", categoria_principal=3, categorias_secundarias=[3,4,5,6])
+    producto3 = Producto(codigo_barras="6258597106542", nombre="Sal", categoria_principal=3, categorias_secundarias=[3,4,5,6])
     producto4 = Producto(codigo_barras="6542505391084", nombre="Pimienta", categoria_principal=4, categorias_secundarias=[4,11,12])
 
     producto1.save()
@@ -182,7 +160,7 @@ def inserta():
     pedido4.save()
 
     usuario1 = Usuario(dni="22246432G", nombre= "Joselito", apellido1="Manzanas", apellido2="Platanero", f_nac="1984-12-20", tarjetas=[tarjeta1, tarjeta2] , pedidos=[pedido1, pedido2])
-    usuario2 = Usuario(dni= "90662513D", nombre= "Miguelon",apellido1="Martinez", apellido2="Puerta", f_nac="2000-02-02", tarjetas=[tarjeta3, tarjeta4] , pedidos=[pedido3, pedido4])
+    usuario2 = Usuario(dni="90662513D", nombre= "Miguelon", apellido1="Martinez", apellido2="Puerta", f_nac="2000-02-02", tarjetas=[tarjeta3, tarjeta4] , pedidos=[pedido3, pedido4])
 
     usuario1.save()
     usuario2.save()

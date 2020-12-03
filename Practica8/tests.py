@@ -284,58 +284,52 @@ def obj_str(o):
 
 class TestPersistencia(unittest.TestCase):
     """Tests a ejecutar sobre las clases """
+    
+    def setUp(self):
+        connect('giw_mongoengine')
+        
+    def tearDown(self):
+        Usuario.drop_collection()
+        Pedido.drop_collection()
+        Producto.drop_collection()
+    
 
     def test_producto_invalido(self):
         """Productos con datos incorrectos"""
-        init()
-        Producto.drop_collection()
-
         for p in PRODUCTOS_INCORRECTOS:
             with self.assertRaises(ValidationError, msg=obj_str(p)):
-                p.save()
+                p.save(cascade=True, force_insert=True)
 
     def test_productos_validos(self):
         """Productos con datos validos"""
-        init()
-        Producto.drop_collection()
-
         for p in PRODUCTOS_CORRECTOS:
-            p.save()
+            p.save(cascade=True, force_insert=True)
             psaved = Producto.objects.get(pk=p.pk)
             self.assertEqual(p, psaved)
         self.assertEqual(len(Producto.objects), len(PRODUCTOS_CORRECTOS))
 
     def test_lineas_invalidas(self):
         """Lineas con datos invalidos"""
-        init()
-
         for linea in LINEAS_INCORRECTAS:
             with self.assertRaises(ValidationError, msg=obj_str(linea)):
                 linea.validate()
 
     def test_lineas_validas(self):
         """Lineas con datos validos"""
-        init()
-
         for linea in LINEAS_CORRECTAS:
+            linea.ref.save()
             linea.validate()
 
     def test_pedidos_invalidos(self):
         """Pedidos con datos invalidos"""
-        init()
-
         for pedido in PEDIDOS_INCORRECTOS:
             with self.assertRaises(ValidationError, msg=obj_str(pedido)):
-                pedido.save()
+                pedido.save(cascade=True, force_insert=True)
 
     def test_pedidos_validos(self):
         """Pedidos con datos válidos"""
-        init()
-        Pedido.drop_collection()
-        Producto.drop_collection()
-
         for pedido in PEDIDOS_CORRECTOS:
-            pedido.save()
+            pedido.save(cascade=True, force_insert=True)
             pedido_added = Pedido.objects.get(pk=pedido.pk)
             self.assertEqual(pedido, pedido_added, msg=obj_str(pedido))
         self.assertEqual(len(Pedido.objects), len(PEDIDOS_CORRECTOS))
@@ -344,64 +338,49 @@ class TestPersistencia(unittest.TestCase):
 
     def test_tarjetas_invalidas(self):
         """Tarjetas con datos invalidos"""
-        init()
-
         for tarjeta in TARJETAS_INCORRECTAS:
             with self.assertRaises(ValidationError, msg=obj_str(tarjeta)):
                 tarjeta.validate()
 
     def test_tarjetas_validas(self):
         """Tarjetas con datos válidos"""
-        init()
-
         for tarjeta in TARJETAS_CORRECTAS:
             tarjeta.validate()
 
     def test_usuarios_invalidos(self):
         """Usuarios con datos incorrectos"""
-        init()
-
         for usuario in USUARIOS_INCORRECTOS:
             with self.assertRaises(ValidationError, msg=obj_str(usuario)):
-                usuario.save()
+                usuario.save(cascade=True, force_insert=True)
 
     def test_usuarios_validos(self):
         """Creación de usuarios con datos válidos"""
-        init()
-        Usuario.drop_collection()
-        Pedido.drop_collection()
-        Producto.drop_collection()
-
-        for prod in PRODUCTOS_CORRECTOS:
-            prod.save()
-
-        for pedido in PEDIDOS_CORRECTOS:
-            pedido.save()
+        for e in PRODUCTOS_CORRECTOS + PEDIDOS_CORRECTOS:
+            e.save()
 
         for usuario in USUARIOS_CORRECTOS:
-            usuario.save()
+            usuario.save(cascade=True, force_insert=True)
             usuario_added = Usuario.objects.get(pk=usuario.pk)
             self.assertEqual(usuario, usuario_added, msg=obj_str(usuario))
         self.assertEqual(len(Usuario.objects), len(USUARIOS_CORRECTOS))
 
     def test_eliminacion_pedido(self):
         """Eliminación automática de pedidos"""
-        init()
         Usuario.drop_collection()
         Pedido.drop_collection()
         Producto.drop_collection()
 
         prod1 = Producto(nombre="Galletas Oreo", codigo_barras="9780201379624", categoria_principal=5,
                          categorias_secundarias=[5, 8, 9])
-        prod1.save()
+        prod1.save(cascade=True, force_insert=True)
         linea = Linea(num_items=3, precio_item=1.5, name="Galletas Oreo", total=4.5, ref=prod1)
         p1 = Pedido(total=4.5, fecha='2016,11,25,10,15,24,000000', lineas=[linea])
-        p1.save()
+        p1.save(cascade=True, force_insert=True)
 
         u = Usuario(dni="65068806N", nombre="Pepe", apellido1="Peces", apellido2="Cuadrado", f_nac="1985-12-11",
                     tarjetas=[TARJETAS_CORRECTAS[0], TARJETAS_CORRECTAS[1]],
                     pedidos=[p1])
-        u.save()
+        u.save(cascade=True, force_insert=True)
         self.assertEqual(len(u.pedidos), 1)
         
         p1.delete()
@@ -410,7 +389,6 @@ class TestPersistencia(unittest.TestCase):
 
     def test_inserta(self):
         """Comprueba que la función inserta almacena el número esperado de objetos"""
-        init()
         Usuario.drop_collection()
         Pedido.drop_collection()
         Producto.drop_collection()
