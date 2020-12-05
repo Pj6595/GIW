@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
 #
-# CABECERA AQUI
+# Jaime Antolín, Álvar Domingo, Pablo Jurado, Leire Osés y Sans Undertale declaramos que esta solución es fruto exclusivamente
+#de nuestro trabajo personal. No hemos sido ayudados por ninguna otra persona ni hemos
+#obtenido la solución de fuentes externas, y tampoco hemos compartido nuestra solución
+#con nadie. Declaramos además que no hemos realizado de manera deshonesta ninguna otra
+#actividad que pueda mejorar nuestros resultados ni perjudicar los resultados de los demás.
 #
 
 
 from flask import Flask, request, session, render_template
-from mongoengine import connect, Document, StringField, EmailField
+from mongoengine import connect, Document, StringField, EmailField, BinaryField
+import hashlib, random, string
+import bcrypt
 # Resto de importaciones
 
 
@@ -20,7 +26,7 @@ class User(Document):
     full_name = StringField(min_length=2, max_length=50, required=True)
     country = StringField(min_length=2, max_length=50, required=True)
     email = EmailField(required=True)
-    passwd = StringField(required=True)
+    passwd = BinaryField(required=True)
     totp_secret = StringField(required=False)
 
 
@@ -33,19 +39,77 @@ class User(Document):
 # contraseñas, explicando razonadamente por qué es seguro
 #
 
+def hashearPassword(password, salt = None):
+    if salt == None:
+        salt = bcrypt.gensalt()
+    hashedPass = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashedPass
+
 
 @app.route('/signup', methods=['POST'])
 def signup():
+    nickname = request.form['nickname']
+    nombre = request.form['full_name']
+    pais = request.form['country']
+    mail = request.form['email']
+    password = request.form['password']
+    password2 = request.form['password2']
+    
+    usuario = User.objects(user_id = nickname).first()
+
+    if usuario != None:
+        return "El usuario ya existe crack", 400
+
+    if password != password2:
+        return "Las contraseñas no coinciden", 400
+
+    hashedPass = hashearPassword(password)
+    
+    nuevoUsuario = User(user_id=nickname, full_name=nombre, country=pais, email=mail, passwd=hashedPass)
+    try:
+        nuevoUsuario.save()
+    except:
+        return "No has introducido bien los datos", 400
+    return "Bienvenido usuario " + nombre, 200
     pass
 
 
 @app.route('/change_password', methods=['POST'])
 def change_password():
+    nickname = request.form["nickname"]
+    old_pasword = request.form["old_password"]
+    new_password = request.form["new_password"]
+
+    if(nickname != None and old_pasword != None and new_password != None):
+        usuario_bd = User.objects(user_id =nickname).first()
+
+        correcto = usuario_bd != None
+
+        if correcto:
+            correcto = bcrypt.checkpw(old_pasword.encode('utf-8'), usuario_bd.passwd)
+
+        if(correcto):
+            usuario_bd.passwd = hashearPassword(new_password)
+            usuario_bd.save()
+            return "La contrasena del usuario " +  nickname + " ha sido modificada"
+        else:
+            return "No existe usuario o la contraseña es incorrecta", 400  
+    else:
+         return "No se han introducido los parametros correctamente", 400
+        
     pass
  
            
 @app.route('/login', methods=['POST'])
 def login():
+    nickname = request.form["nickname"]
+    password = request.form["password"]
+    
+    usuario = User.objects(user_id =nickname).first()
+    if usuario == None or not bcrypt.checkpw(password.encode('utf-8'), usuario.passwd):
+        return "Usuario o contraseña incorrectos", 400
+
+    return "Bienvenido " + usuario.full_name, 200
     pass
     
 
