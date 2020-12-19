@@ -141,11 +141,12 @@ def signup_totp():
     try:
         nuevoUsuario.save()
         totpUrl = pyotp.totp.TOTP(nuevoUsuario.totp_secret).provisioning_uri(name=nuevoUsuario.user_id, issuer_name='TOTP para GIW')
-        img = qrcode.make(totpUrl)
-        img.save('totpqr.png')
+        #img = qrcode.make(totpUrl)
+        #img.save('totpqr.png')
+        return "Nombre de Usuario: " + nickname +"\nSecreto: " + totp_s  + "</br><img src='http://api.qrserver.com/v1/create-qr-code/?data="+ totpUrl + "?secret="+totp_s+"&bgcolor=255-255-255' >"
     except:
         return "No has introducido bien los datos", 400
-    return send_file('totpqr.png'), 200
+   # return send_file('totpqr.png'), 200
         
 
 @app.route('/login_totp', methods=['POST'])
