@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 #
-# Jaime Antolín, Álvar Domingo, Pablo Jurado, Leire Osés y Sans Undertale declaramos que esta solución es fruto exclusivamente
-#de nuestro trabajo personal. No hemos sido ayudados por ninguna otra persona ni hemos
-#obtenido la solución de fuentes externas, y tampoco hemos compartido nuestra solución
-#con nadie. Declaramos además que no hemos realizado de manera deshonesta ninguna otra
-#actividad que pueda mejorar nuestros resultados ni perjudicar los resultados de los demás.
+# Jaime Antolín, Álvar Domingo, Pablo Jurado, Leire Osés y Sans Undertale declaramos 
+# que esta solución es fruto exclusivamente de nuestro trabajo personal. No hemos sido 
+# ayudados por ninguna otra persona ni hemos obtenido la solución de fuentes externas, 
+# y tampoco hemos compartido nuestra solución con nadie. Declaramos además que no hemos 
+# realizado de manera deshonesta ninguna otra actividad que pueda mejorar nuestros 
+# resultados ni perjudicar los resultados de los demás.
 #
 
 
@@ -41,9 +42,14 @@ def hashearPassword(password, salt = None):
 ##############
 
 # 
-# Explicación detallada del mecanismo escogido para el almacenamiento de
-# contraseñas, explicando razonadamente por qué es seguro
-#
+# Para almacnar las contraseñas, hemos decidido usar la librería BCrypt. Las funciones contenidas en ella no solo generan
+# una sal segura y distinta para cada contraseña (lo cual la protege de potenciales ataques con rainbow tables), sino que el algoritmo
+# que ofusca la contraseña (una modificación de Blowfish) aplica la función de hash múltiples veces seguidas, lo cual dificulta 
+# en gran medida los ataques de fuerza bruta. Otra de las principales ventajas de bcrypt es que es adaptable. Hashear la contraseña muchas
+# veces puede llegar a ser un proceso lento y costoso. Bcrypt nos ofrece la posibilidad de reducir el proceso, sacrificando un poco de seguridad
+# pero haciendo más fluido el uso de nuestro sistema. También podría hacerse al revés, es decir, ofuscar aún más la contraseña, haciendo el proceso
+# de iniciar sesión más lento pero blindando más aún nuestro sistema contra ataques de fuerza bruta.
+# 
 
 
 @app.route('/signup', methods=['POST'])
@@ -57,7 +63,7 @@ def signup():
     usuario = User.objects(user_id = nickname).first()
 
     if usuario != None:
-        return "El usuario ya existe crack", 400
+        return "El usuario ya existe", 400
 
     if password != password2:
         return "Las contraseñas no coinciden", 400
@@ -113,9 +119,12 @@ def login():
 ##############
 
 # 
-# Explicación detallada de cómo se genera la semilla aleatoria, cómo se construye
-# la URL de registro en Google Authenticator y cómo se genera el código QR
-#
+# Para generar la clave totp aleatoria, hecmos uso de la librería pyotp, que genera una clave de 16 caracteres con el comando pyotp.random_base32().
+# Esa clave queda almacenada en la entrada del usuario en la base de datos. Posteriormente, generamos una url para hacer un código qr en base a ella, con el
+# comando pyotp.totp.TOTP(la clave secreta).provisioning_uri(el nickname del usuario, TOTP para GIW (que será el nombre del proveedor de la contraseña)).
+# Una vez hecho esto, creamos el qr para la aplicación autenticadora usando la api de qrserver.com. Como datos introducimos la url de antes, y el color de fondo
+# (en este caso blanco). Finalmente quedaría como http://api.qrserver.com/v1/create-qr-code/?data=Clavesecreta&bgcolor=255-255-255.
+# Finalmente se devuelve un html con una referencia a la imagen que acabamos de crear, y la clave secreta en formato de texto plano.
 
 
 @app.route('/signup_totp', methods=['POST'])
@@ -129,7 +138,7 @@ def signup_totp():
     usuario = User.objects(user_id = nickname).first()
 
     if usuario != None:
-        return "El usuario ya existe crack", 400
+        return "El usuario ya existe", 400
 
     if password != password2:
         return "Las contraseñas no coinciden", 400
@@ -141,12 +150,9 @@ def signup_totp():
     try:
         nuevoUsuario.save()
         totpUrl = pyotp.totp.TOTP(nuevoUsuario.totp_secret).provisioning_uri(name=nuevoUsuario.user_id, issuer_name='TOTP para GIW')
-        #img = qrcode.make(totpUrl)
-        #img.save('totpqr.png')
-        return "Nombre de Usuario: " + nickname +"\nSecreto: " + totp_s  + "</br><img src='http://api.qrserver.com/v1/create-qr-code/?data="+ totpUrl + "?secret="+totp_s+"&bgcolor=255-255-255' >"
+        return "Nombre de Usuario: " + nickname +"\nSecreto: " + totp_s  + "</br><img src='http://api.qrserver.com/v1/create-qr-code/?data="+ totpUrl + "&bgcolor=255-255-255' >"
     except:
         return "No has introducido bien los datos", 400
-   # return send_file('totpqr.png'), 200
         
 
 @app.route('/login_totp', methods=['POST'])
