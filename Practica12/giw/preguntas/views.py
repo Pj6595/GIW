@@ -68,5 +68,12 @@ def nueva_pregunta(request):
 @require_http_methods(["GET"])
 def pregunta_n(request):
     """Muestra la pregunta número n"""
-    #pregunta = get_object_or_404(Pregunta, pk = )
+    pregunta = get_object_or_404(Pregunta, pk = )
+    form = AnswerForm(request.POST)
+    if not form.is_valid():
+        return HttpResponseBadRequest(f"Error en los datos del formulario: {form.errors}")
+    texto_f = form.cleaned_data['respuesta']
+    
+    answer = Respuesta(answer_text = texto_f, answer_author=request.user, question=)
+    answer.save()
     
