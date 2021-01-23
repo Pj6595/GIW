@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}
+Añadir nueva pregunta
+{% endblock %}
+
+{% block content %}
+<h2>{{pregunta.question_title}} -- {{pregunta.question_author.first_name}} {{pregunta.question_author.username}} ({{pregunta.question_date}})</h2>
+<p>{{pregunta.question_text}}</p>
+{% endblock %}
+
+{% block content %}
+<h2>Añadir nueva respuesta</h2>
+<form action="{% url 'preguntas:nueva_respuesta' %}" method="post">
+    <table>
+    {{ answer_form }}
+    </table>
+    {% csrf_token %}
+    <button type="submit">Añadir respuesta</button>
+    </form>
+{% endblock %}
+<!--<h2>Añadir nueva pregunta</h2>
+<form action="{% url 'preguntas:nueva_pregunta' %}" method="post">
+<table>
+{{ question_form }}
+</table>
+{% csrf_token %}
+<button type="submit">Añadir pregunta</button>
+</form>-->
