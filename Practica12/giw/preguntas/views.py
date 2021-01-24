@@ -66,14 +66,18 @@ def nueva_pregunta(request):
 
 @login_required(login_url='preguntas:login')
 @require_http_methods(["GET"])
-def pregunta_n(request):
+def pregunta_n(request, question_id):
     """Muestra la pregunta número n"""
-    pregunta = get_object_or_404(Pregunta, pk = )
-    form = AnswerForm(request.POST)
-    if not form.is_valid():
-        return HttpResponseBadRequest(f"Error en los datos del formulario: {form.errors}")
-    texto_f = form.cleaned_data['respuesta']
+    pregunta = get_object_or_404(Pregunta, pk = question_id)
+
+    return render(request, "pregunta.html", {'pregunta': pregunta})
+
+    ##return redirect(reverse('preguntas:index'))
+    #form = AnswerForm(request.POST)
+    #if not form.is_valid():
+        #return HttpResponseBadRequest(f"Error en los datos del formulario: {form.errors}")
+    #texto_f = form.cleaned_data['respuesta']
     
-    answer = Respuesta(answer_text = texto_f, answer_author=request.user, question=)
-    answer.save()
+    #answer = Respuesta(answer_text = texto_f, answer_author=request.user, question=pregunta)
+    #answer.save()
     

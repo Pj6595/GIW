@@ -9,5 +9,7 @@ urlpatterns = [
     path('login', views.loginFunction, name='login'),
     path('logout', views.logoutFunction, name='logout'),
     path('nueva_pregunta', views.nueva_pregunta, name='nueva_pregunta'),
+    path('<int:question_id>/', views.pregunta_n, name='pregunta_n'),
+
     #path('')
 ]

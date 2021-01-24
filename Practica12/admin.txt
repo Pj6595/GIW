@@ -1,2 +1,17 @@
 nombre: giwgrupo6
 contraseña: odiamosgiw
+
+python manage.py runserver
+
+<!--
+{% block content %}
+<h2>Añadir nueva respuesta</h2>
+<form action="{% url 'preguntas:nueva_respuesta' %}" method="post">
+    <table>
+    {{ answer_form }}
+    </table>
+    {% csrf_token %}
+    <button type="submit">Añadir respuesta</button>
+    </form>
+{% endblock %}
+-->

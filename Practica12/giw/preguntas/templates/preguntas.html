@@ -6,7 +6,7 @@ Preguntas
 {% block content %}
 <ul>
 {% for pregunta in preguntas %}
-    <li><a href="{% url 'preguntas' question.pk %}"></a>{{pregunta.question_title}}</a> -- {{pregunta.question_author.first_name}} {{pregunta.question_author.username}} ({{pregunta.question_date}})
+    <li><a href={{pregunta.pk}}>--{{pregunta.question_title}}</a> -- {{pregunta.question_author.first_name}} {{pregunta.question_author.username}} ({{pregunta.question_date}})
     </li>
 {% endfor %}
 </ul>
