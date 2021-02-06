@@ -70,7 +70,9 @@ def pregunta_n(request, question_id):
     """Muestra la pregunta número n"""
     pregunta = get_object_or_404(Pregunta, pk = question_id)
 
-    return render(request, "pregunta.html", {'pregunta': pregunta})
+    respuestas =  Respuesta.objects.filter(question=pregunta)
+    
+    return render(request, "pregunta.html", {'pregunta': pregunta, 'respuestas:':respuestas})
 
     ##return redirect(reverse('preguntas:index'))
     #form = AnswerForm(request.POST)

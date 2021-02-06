@@ -8,6 +8,16 @@ Añadir nueva pregunta
 <h2>{{pregunta.question_title}} -- {{pregunta.question_author.first_name}} {{pregunta.question_author.username}} ({{pregunta.question_date}})</h2>
 <p>{{pregunta.question_text}}</p>
 <h2>Respuestas</h2>
+<ul>
+    {% for respuesta in respuestas %}
+        <li>--{{respuesta.answer_text}}</li>
+        <li> {{respuesta.answer_author.username}} ({{respuesta.answer_date}})</li>
+        
+    {% endfor %}
+</ul>
+
+<h2>Añadir respuesta</h2>
+
 {% endblock %}
 
 
